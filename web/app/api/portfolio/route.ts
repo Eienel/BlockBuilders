@@ -1,84 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { spawn } from 'child_process';
 
-async function callMcpTool(tool: string, args: Record<string, string>): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const mcp = spawn('npx', ['-y', '@suisei-mcp/mcp'], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 30000,
-    });
+/*
+ * Portfolio analyzer API. Mirrors what the Suisei `sui_get_portfolio` tool
+ * does under the hood: it fuses suix_getAllBalances + suix_getStakes from
+ * the Sui mainnet fullnode into one wallet snapshot. Real on-chain data,
+ * no key, read-only.
+ */
 
-    let output = '';
-    let error = '';
+const RPC = 'https://fullnode.mainnet.sui.io:443';
+const SUI_TYPE = '0x2::sui::SUI';
+const toSui = (mist: string | number | bigint) => Number(BigInt(mist)) / 1e9;
 
-    mcp.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    mcp.stderr.on('data', (data) => {
-      error += data.toString();
-    });
-
-    mcp.on('close', (code) => {
-      if (code === 0) {
-        resolve(output);
-      } else {
-        reject(new Error(`MCP error: ${error || output}`));
-      }
-    });
-
-    // Send JSON-RPC request
-    const request = {
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'tools/call',
-      params: {
-        name: tool,
-        arguments: args,
-      },
-    };
-
-    mcp.stdin.write(JSON.stringify(request) + '\n');
-    mcp.stdin.end();
+async function rpc(method: string, params: unknown[]): Promise<any> {
+  const res = await fetch(RPC, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    cache: 'no-store',
   });
+  if (!res.ok) throw new Error(`RPC ${method} failed: ${res.status}`);
+  const json = await res.json();
+  if (json.error) throw new Error(`RPC ${method}: ${json.error.message}`);
+  return json.result;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const { address } = await request.json();
 
-    if (!address || !address.startsWith('0x')) {
+    if (!address || !/^0x[0-9a-fA-F]+$/.test(address)) {
       return NextResponse.json(
-        { error: 'Invalid Sui address' },
+        { error: 'Enter a valid Sui address (0x...)' },
         { status: 400 }
       );
     }
 
-    // Call the real Suisei MCP tool
-    const result = await callMcpTool('sui_get_portfolio', {
-      address,
-      network: 'mainnet',
+    // Same two reads the sui_get_portfolio tool fuses.
+    const [balances, stakes] = await Promise.all([
+      rpc('suix_getAllBalances', [address]) as Promise<
+        { coinType: string; totalBalance: string; coinObjectCount: number }[]
+      >,
+      rpc('suix_getStakes', [address]) as Promise<
+        {
+          validatorAddress: string;
+          stakes: { principal: string; estimatedReward?: string; status: string }[];
+        }[]
+      >,
+    ]);
+
+    // Liquid SUI + other coins
+    const suiBal = balances.find((b) => b.coinType === SUI_TYPE);
+    const liquidSui = toSui(suiBal?.totalBalance ?? '0');
+    const otherCoins = balances
+      .filter((b) => b.coinType !== SUI_TYPE && BigInt(b.totalBalance) > 0n)
+      .map((b) => ({
+        symbol: b.coinType.split('::').pop() || 'TOKEN',
+        amount: toSui(b.totalBalance).toFixed(4),
+      }));
+
+    // Stakes grouped by validator
+    let stakedMist = 0n;
+    let rewardMist = 0n;
+    const stakeRows = stakes.map((v) => {
+      let validatorPrincipal = 0n;
+      let validatorReward = 0n;
+      for (const s of v.stakes) {
+        validatorPrincipal += BigInt(s.principal);
+        validatorReward += BigInt(s.estimatedReward ?? '0');
+      }
+      stakedMist += validatorPrincipal;
+      rewardMist += validatorReward;
+      return {
+        validatorAddress: v.validatorAddress,
+        validatorName: `${v.validatorAddress.slice(0, 6)}…${v.validatorAddress.slice(-4)}`,
+        amount: toSui(validatorPrincipal).toFixed(4),
+        reward: toSui(validatorReward).toFixed(4),
+      };
     });
 
-    const parsed = JSON.parse(result);
+    const totalExposure = liquidSui + toSui(stakedMist) + toSui(rewardMist);
 
-    // Transform response for frontend
     const portfolio = {
       address,
-      totalBalance: parsed.summary?.total_sui_exposure || '0',
-      coins:
-        parsed.liquid?.other_coins?.map((coin: any) => ({
-          symbol: coin.coin_type.split('::').pop() || 'UNKNOWN',
-          amount: (Number(coin.total_mist) / 1e9).toFixed(2),
-        })) || [],
-      stakes:
-        parsed.staked?.validators?.map((v: any) => ({
-          validatorAddress: v.sui_address,
-          validatorName: v.name || 'Validator',
-          amount: v.staked_amount,
-          apy: v.apy_percentage,
-        })) || [],
-      rewards: parsed.summary?.reward_sui || '0',
+      totalBalance: totalExposure.toFixed(4),
+      coins: [
+        { symbol: 'SUI', amount: liquidSui.toFixed(4) },
+        ...otherCoins,
+      ],
+      stakes: stakeRows,
+      rewards: toSui(rewardMist).toFixed(4),
     };
 
     return NextResponse.json(portfolio);

@@ -12,10 +12,8 @@ import { Reveal } from '@/components/Reveal';
 import { RotatingEyebrow } from '@/components/RotatingEyebrow';
 import { AnimatedTerminal } from '@/components/AnimatedTerminal';
 import { Clients } from '@/components/Clients';
-import { FlowDiagram } from '@/components/FlowDiagram';
 import { SlotImage } from '@/components/SlotImage';
 import { ToolDirectory } from '@/components/ToolDirectory';
-import { Showcase } from '@/components/Showcase';
 import { toolCount } from '@/lib/tools';
 
 const GITHUB = 'https://github.com/eienel/suisei';
@@ -35,8 +33,8 @@ export default function Page() {
         <Hero />
         <Clients />
         <Stats />
+        <Moat />
         <Security />
-        <Flow />
         <Tools />
         <Built />
         <Roadmap />
@@ -101,21 +99,24 @@ function Hero() {
           Suisei puts Sui behind the Model Context Protocol, so any AI agent
           can read, build, simulate, sign, and submit on chain. Full portfolio
           visibility, persistent memory, transaction safety, and boundless agent
-          autonomy—all non-custodial.
+          autonomy. All non-custodial.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <a
             href={GITHUB}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent-hover active:translate-y-0"
+            className="btn-shine elevate-accent inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-hover active:translate-y-0"
           >
             <GithubLogo size={18} weight="fill" />
             Get started on GitHub
           </a>
           <a
             href={NPM_MCP}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-paper-raised px-5 py-3 text-sm font-medium text-ink transition-all hover:-translate-y-0.5 hover:border-accent active:translate-y-0"
+            className="elevate-hover group inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-paper-raised px-5 py-3 text-sm font-medium text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-accent hover:text-accent active:translate-y-0"
           >
-            <Package size={18} />
+            <Package
+              size={18}
+              className="transition-transform duration-300 group-hover:-rotate-12"
+            />
             View on npm
           </a>
         </div>
@@ -138,7 +139,9 @@ function Hero() {
             className="border-0 bg-transparent shadow-none"
           />
         </div>
-        <AnimatedTerminal />
+        <div className="smoke">
+          <AnimatedTerminal />
+        </div>
       </Reveal>
     </header>
   );
@@ -146,32 +149,168 @@ function Hero() {
 
 function Stats() {
   const stats = [
-    { value: toolCount.toString(), label: 'tools, one install' },
+    { value: toolCount.toString(), label: 'tools, one install', accent: true },
     { value: '2', label: 'packages on npm' },
     { value: '0', label: 'keys held by the toolkit' },
     { value: '100%', label: 'on real testnet' },
   ];
   return (
     <section className="mx-auto max-w-6xl px-5 py-14 md:py-16">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="bg-paper-raised px-5 py-8 text-center">
-            <p className="font-mono text-3xl font-semibold tracking-tight text-ink md:text-4xl">
-              {s.value}
-            </p>
-            <p className="mt-2 text-sm text-muted">{s.label}</p>
-          </div>
+      <div className="grid grid-cols-2 border-y border-line md:grid-cols-4 md:divide-x md:divide-line">
+        {stats.map((s, i) => (
+          <Reveal key={s.label} delay={i * 70}>
+            <div className="px-1 py-8 md:px-7">
+              <p
+                className={`font-mono text-4xl font-semibold tracking-tight tabular-nums md:text-5xl ${
+                  s.accent ? 'text-accent' : 'text-ink'
+                }`}
+              >
+                {s.value}
+              </p>
+              <p className="mt-3 text-sm leading-snug text-muted">{s.label}</p>
+            </div>
+          </Reveal>
         ))}
       </div>
     </section>
   );
 }
 
+function Moat() {
+  const rows = [
+    {
+      tool: 'agent-first',
+      claim: 'The agent builds, not you.',
+      detail:
+        'Structured JSON in, structured JSON out. No React, no wallet adapter, no human in the build loop.',
+    },
+    {
+      tool: 'sui_get_portfolio',
+      claim: 'A whole wallet in one call.',
+      detail:
+        'Coins, stakes, rewards, and total SUI exposure in a single read. The hand-joined fan-out everyone else writes does not exist here.',
+    },
+    {
+      tool: 'sui_explain_tx',
+      claim: 'It looks before it signs.',
+      detail:
+        'Decode, simulate, and judge any transaction before a key ever touches it. No other Sui SDK ships this.',
+    },
+    {
+      tool: 'mnemosui_*',
+      claim: 'Memory that outlives the session.',
+      detail:
+        'Indexed on Sui, stored on Walrus, portable between clients. The agent remembers what it did and why.',
+    },
+    {
+      tool: 'agent_vault',
+      claim: 'Autonomy you can bound.',
+      detail:
+        'On-chain spend limits, recipient allowlists, and expiry. Hand an agent real funds without handing it your keys.',
+    },
+    {
+      tool: 'MCP',
+      claim: 'Any agent, one install.',
+      detail:
+        'Claude Desktop, Cursor, Claude web and mobile, or your own bot. Not locked to one client, not locked to Sui tooling.',
+    },
+  ];
+  return (
+    <section className="border-y border-line bg-paper-raised/40 py-20 md:py-28">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-x-16 gap-y-12 px-5 md:grid-cols-[0.85fr_1.15fr]">
+        {/* Left: the thesis. Sticky on desktop so it anchors the list. */}
+        <div className="md:sticky md:top-24 md:self-start">
+          <Reveal>
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
+              The difference
+            </p>
+            <h2 className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight md:text-[2.6rem]">
+              Built for agents,
+              <br />
+              <span className="text-muted">not for humans</span>
+              <br />
+              writing app code.
+            </h2>
+            <p className="mt-6 max-w-sm leading-relaxed text-muted">
+              A human SDK hands you primitives and expects you to assemble them.
+              Suisei hands the agent the whole Sui Stack as one-line tools, so it
+              reasons, decides, and acts on its own.
+            </p>
+            <div className="elevate mt-8 space-y-px overflow-hidden rounded-xl border border-line text-sm">
+              <div className="flex items-center gap-3 bg-paper px-4 py-3">
+                <span className="font-mono text-xs text-faint">others</span>
+                <span className="text-muted">you assemble the primitives</span>
+              </div>
+              <div className="flex items-center gap-3 bg-accent-soft px-4 py-3">
+                <span className="font-mono text-xs text-accent">suisei</span>
+                <span className="font-medium text-ink">the agent assembles itself</span>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+
+        {/* Right: editorial numbered rows on hairlines. */}
+        <ol className="border-t border-line">
+          {rows.map((r, i) => (
+            <Reveal key={r.tool} delay={i * 60}>
+              <li className="group grid grid-cols-[auto_1fr] gap-x-5 border-b border-line py-6 transition-colors hover:bg-paper/60 md:gap-x-8 md:py-7">
+                <span className="font-mono text-sm tabular-nums text-faint">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h3 className="text-lg font-semibold tracking-tight md:text-xl">
+                      {r.claim}
+                    </h3>
+                    <code className="font-mono text-xs text-accent">{r.tool}</code>
+                  </div>
+                  <p className="mt-2 max-w-xl leading-relaxed text-muted">
+                    {r.detail}
+                  </p>
+                </div>
+              </li>
+            </Reveal>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
 function Security() {
+  const rules = [
+    {
+      icon: Lock,
+      title: 'The toolkit never holds keys.',
+      body: (
+        <>
+          Every transaction-building tool returns unsigned{' '}
+          <code className="font-mono text-sm text-ink">tx_bytes_base64</code>.
+          The host signs, the toolkit submits. A tool that holds a key is a
+          tool that can spend money.
+        </>
+      ),
+    },
+    {
+      icon: Key,
+      title: 'Keys never enter an agent.',
+      body: (
+        <>
+          Key generation is not a tool, because that would land the secret in
+          the model prompt and logs. Signing lives in{' '}
+          <code className="font-mono text-sm text-ink">agent-signer</code>, a
+          separate local process.
+        </>
+      ),
+    },
+  ];
   return (
     <section id="security" className="mx-auto max-w-6xl px-5 py-20 md:py-28">
       <Reveal>
-        <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
+          Non-negotiable
+        </p>
+        <h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
           A toolkit you would trust an agent with.
         </h2>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -179,60 +318,31 @@ function Security() {
           act on chain without ever holding the keys that move money.
         </p>
       </Reveal>
-      <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2">
-        <Reveal>
-          <article className="group h-full rounded-2xl border border-line bg-paper-raised p-7 transition-colors hover:border-accent">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-soft text-accent">
-              <Lock size={24} weight="duotone" />
-            </div>
-            <h3 className="mt-5 text-xl font-semibold tracking-tight">
-              The toolkit never holds keys
-            </h3>
-            <p className="mt-3 leading-relaxed text-muted">
-              Every transaction-building tool returns unsigned{' '}
-              <code className="font-mono text-sm text-ink">tx_bytes_base64</code>
-              . The host signs, the toolkit submits. A tool that holds a key is
-              a tool that can spend money.
-            </p>
-          </article>
-        </Reveal>
-        <Reveal delay={90}>
-          <article className="group h-full rounded-2xl border border-line bg-paper-raised p-7 transition-colors hover:border-accent">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-soft text-accent">
-              <Key size={24} weight="duotone" />
-            </div>
-            <h3 className="mt-5 text-xl font-semibold tracking-tight">
-              Keys never enter an agent
-            </h3>
-            <p className="mt-3 leading-relaxed text-muted">
-              Key generation is not a tool, because that would land the secret
-              in the model prompt and logs. Signing lives in{' '}
-              <code className="font-mono text-sm text-ink">agent-signer</code>,
-              a separate local process.
-            </p>
-          </article>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-function Flow() {
-  return (
-    <section className="border-y border-line bg-paper-raised/60 py-20 md:py-28">
-      <div className="mx-auto max-w-6xl px-5">
-        <Reveal>
-          <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-            One loop, four steps, zero exposed keys.
-          </h2>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-            From a plain-language ask to an on-chain result. The signing step
-            is the only one that touches a key, and it stays on your machine.
-          </p>
-        </Reveal>
-        <div className="mt-12">
-          <FlowDiagram />
-        </div>
+      <div className="mt-14 space-y-px">
+        {rules.map((rule, i) => {
+          const Icon = rule.icon;
+          return (
+            <Reveal key={rule.title} delay={i * 90}>
+              <article className="group grid grid-cols-[auto_1fr] items-start gap-x-6 border-t border-line py-9 md:grid-cols-[auto_auto_1fr] md:gap-x-10 md:py-11">
+                <span className="font-mono text-5xl font-semibold leading-none tabular-nums text-line-strong transition-colors group-hover:text-accent md:text-7xl">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent md:flex">
+                  <Icon size={26} weight="duotone" />
+                </div>
+                <div className="border-l border-line pl-6 md:pl-8">
+                  <h3 className="text-xl font-semibold tracking-tight md:text-2xl">
+                    {rule.title}
+                  </h3>
+                  <p className="mt-3 max-w-2xl leading-relaxed text-muted">
+                    {rule.body}
+                  </p>
+                </div>
+              </article>
+            </Reveal>
+          );
+        })}
+        <div className="border-t border-line" />
       </div>
     </section>
   );
@@ -247,7 +357,7 @@ function Tools() {
         </h2>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
           Portfolio snapshots. Transaction safety. Persistent agent memory.
-          Validator comparisons. Everything agents need to act autonomously—all
+          Validator comparisons. Everything agents need to act autonomously. All
           read-only until explicitly signed.
         </p>
       </Reveal>
@@ -266,30 +376,27 @@ function Built() {
     >
       <div className="mx-auto max-w-6xl px-5">
         <Reveal>
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
+          <div className="elevate smoke flex flex-col items-start gap-6 rounded-2xl border border-line bg-paper-raised px-7 py-12 text-center sm:items-center md:py-16">
+            <div className="sm:max-w-xl">
               <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                Built with Suisei
+                Build the first thing on Suisei.
               </h2>
-              <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted">
-                Projects that run on the toolkit. Shipped something with it? Add
-                yours, it takes a minute.
+              <p className="mt-4 text-lg leading-relaxed text-muted">
+                The toolkit is live and the canvas is open. Ship something an
+                agent does on Sui, then put your name on it.
               </p>
             </div>
             <a
               href={SUBMIT}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent-hover active:translate-y-0"
+              className="btn-shine elevate-accent inline-flex shrink-0 items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-hover active:translate-y-0"
             >
               <Plus size={17} weight="bold" />
               Submit your project
             </a>
           </div>
         </Reveal>
-        <div className="mt-12">
-          <Showcase />
-        </div>
       </div>
     </section>
   );
@@ -317,13 +424,13 @@ function Roadmap() {
           web is already mapped.
         </p>
       </Reveal>
-      <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="mt-14 grid grid-cols-1 gap-x-16 gap-y-12 md:grid-cols-2">
         <Reveal>
-          <div className="h-full rounded-2xl border border-line bg-paper-raised p-7">
-            <p className="font-mono text-xs uppercase tracking-wider text-faint">
+          <div className="border-t-2 border-accent pt-5">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
               Live now
             </p>
-            <ul className="mt-5 space-y-4">
+            <ul className="mt-6 space-y-5">
               {live.map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <CheckCircle
@@ -339,7 +446,7 @@ function Roadmap() {
               href={BADGE_EXPLORER}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex items-center gap-1 font-mono text-xs text-accent transition-colors hover:text-accent-hover"
+              className="mt-6 inline-flex items-center gap-1 font-mono text-xs text-accent transition-colors hover:text-accent-hover"
             >
               View the badge package on Suiscan
               <ArrowUpRight size={13} />
@@ -347,11 +454,11 @@ function Roadmap() {
           </div>
         </Reveal>
         <Reveal delay={90}>
-          <div className="h-full rounded-2xl border border-line bg-paper-raised p-7">
-            <p className="font-mono text-xs uppercase tracking-wider text-faint">
+          <div className="border-t-2 border-line pt-5">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-faint">
               Next
             </p>
-            <ul className="mt-5 space-y-4">
+            <ul className="mt-6 space-y-5">
               {next.map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <Circle

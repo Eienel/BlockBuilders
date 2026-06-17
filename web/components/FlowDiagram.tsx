@@ -20,26 +20,30 @@ const STEPS = [
     icon: Robot,
     title: 'Agent asks',
     body: 'The agent calls a tool. No key in sight.',
+    highlight: false,
   },
   {
     icon: Cube,
     title: 'Toolkit builds',
     body: 'Returns unsigned tx_bytes_base64.',
+    highlight: false,
   },
   {
     icon: Signature,
     title: 'You sign',
     body: 'Locally, in agent-signer. The key stays put.',
+    highlight: true,
   },
   {
     icon: PaperPlaneTilt,
     title: 'Toolkit submits',
     body: 'The signed bytes land on chain.',
+    highlight: false,
   },
 ];
 
 export function FlowDiagram() {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLOListElement>(null);
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
@@ -61,43 +65,61 @@ export function FlowDiagram() {
   }, []);
 
   return (
-    <div
+    <ol
       ref={ref}
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4"
     >
       {STEPS.map((step, i) => {
         const Icon = step.icon;
         return (
-          <div key={step.title} className="relative">
-            <div
-              className="reveal h-full rounded-2xl border border-line bg-paper-raised p-6"
-              data-shown={shown ? 'true' : 'false'}
-              style={{ transitionDelay: `${i * 110}ms` }}
-            >
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-soft text-accent">
-                <Icon size={22} weight="duotone" />
-              </div>
-              <p className="mt-4 font-mono text-xs text-faint">
-                Step {i + 1}
-              </p>
-              <h3 className="mt-1 text-base font-semibold tracking-tight">
-                {step.title}
-              </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                {step.body}
-              </p>
+          <li
+            key={step.title}
+            className="reveal relative pt-6"
+            data-shown={shown ? 'true' : 'false'}
+            style={{ transitionDelay: `${i * 110}ms` }}
+          >
+            {/* The step's segment of the rail. Accent on the signing step. */}
+            <span
+              aria-hidden="true"
+              className={`absolute inset-x-0 top-0 h-0.5 ${
+                step.highlight ? 'bg-accent' : 'bg-line'
+              }`}
+            />
+            <div className="flex items-center justify-between">
+              <span
+                className={`font-mono text-sm tabular-nums ${
+                  step.highlight ? 'text-accent' : 'text-faint'
+                }`}
+              >
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <Icon
+                size={22}
+                weight="duotone"
+                className={step.highlight ? 'text-accent' : 'text-faint'}
+              />
             </div>
+            <h3
+              className={`mt-4 text-base font-semibold tracking-tight ${
+                step.highlight ? 'text-accent' : 'text-ink'
+              }`}
+            >
+              {step.title}
+            </h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              {step.body}
+            </p>
             {i < STEPS.length - 1 && (
               <ArrowRight
-                size={20}
+                size={18}
                 weight="bold"
                 aria-hidden="true"
-                className="absolute -right-3 top-1/2 z-10 hidden -translate-y-1/2 text-line-strong lg:block"
+                className="absolute -right-5 top-7 z-10 hidden text-line-strong lg:block"
               />
             )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }

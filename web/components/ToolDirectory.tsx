@@ -13,29 +13,44 @@ export function ToolDirectory() {
 
   return (
     <div>
-      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-2">
-        {shown.map((group) => (
-          <div key={group.label} className="bg-paper-raised p-6">
-            <h3 className="text-base font-semibold tracking-tight text-ink">
-              {group.label}
-            </h3>
-            <p className="mt-1 text-sm text-muted">{group.blurb}</p>
-            <ul className="mt-4 flex flex-wrap gap-2">
-              {group.tools.map((t) => (
-                <li
-                  key={t}
-                  className="rounded-md bg-paper px-2 py-1 font-mono text-xs text-ink"
-                >
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
+      <ol className="border-t border-line">
+        {shown.map((group, i) => (
+          <li
+            key={group.label}
+            className="group grid grid-cols-[auto_1fr] gap-x-5 border-b border-line py-7 transition-colors hover:bg-paper-raised/50 md:gap-x-8"
+          >
+            <span className="font-mono text-sm tabular-nums text-faint">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <div>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h3 className="text-lg font-semibold tracking-tight text-ink">
+                  {group.label}
+                </h3>
+                <span className="font-mono text-xs text-faint">
+                  {group.tools.length} {group.tools.length === 1 ? 'tool' : 'tools'}
+                </span>
+              </div>
+              <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted">
+                {group.blurb}
+              </p>
+              <ul className="mt-4 flex flex-wrap gap-2">
+                {group.tools.map((t) => (
+                  <li
+                    key={t}
+                    className="rounded-md border border-line bg-paper px-2 py-1 font-mono text-xs text-muted transition-colors hover:border-accent hover:text-accent"
+                  >
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </li>
         ))}
-      </div>
+      </ol>
 
       {hiddenCount > 0 && (
-        <div className="mt-6 flex justify-center">
+        <div className="mt-8 flex justify-center">
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}

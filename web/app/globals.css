@@ -176,6 +176,98 @@ body {
   }
 }
 
+/*
+  Depth utilities. The page is mostly flat editorial; these lift only the
+  surfaces that should read as raised (CTAs, the terminal, callout cards).
+  Soft, layered, low-opacity. Never a hard drop shadow.
+*/
+.elevate {
+  box-shadow:
+    0 1px 2px rgba(22, 24, 29, 0.05),
+    0 14px 40px -16px rgba(22, 24, 29, 0.24);
+}
+.elevate-hover {
+  transition: box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.elevate-hover:hover {
+  box-shadow:
+    0 2px 4px rgba(22, 24, 29, 0.06),
+    0 26px 55px -20px rgba(22, 24, 29, 0.30);
+}
+/* Accent-tinted glow for the primary action and highlighted moments. */
+.elevate-accent {
+  box-shadow:
+    0 1px 2px rgba(23, 70, 199, 0.16),
+    0 14px 34px -14px rgba(23, 70, 199, 0.40);
+}
+
+/*
+  Smoke fade: a soft, blurred shadow pooled beneath a raised block so it
+  reads as floating on the paper. Needs a positioned, non-clipping parent.
+*/
+.smoke {
+  position: relative;
+}
+.smoke::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -2.25rem;
+  z-index: -1;
+  height: 4.5rem;
+  width: 80%;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    rgba(22, 24, 29, 0.22),
+    transparent 78%
+  );
+  filter: blur(20px);
+  pointer-events: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .smoke::after {
+    display: none;
+  }
+}
+
+/*
+  Dynamic button: a light sheen that sweeps across on hover, plus a press
+  spring. Layer on top of .elevate-accent. Reduced-motion safe.
+*/
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    120deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 75%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-shine:hover::before {
+  transform: translateX(130%);
+}
+.btn-shine:active {
+  transform: translateY(0) scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-shine::before {
+    display: none;
+  }
+}
+
 /* Accent underline that draws in when its section reveals. */
 .ink-underline {
   background-image: linear-gradient(var(--color-accent), var(--color-accent));
