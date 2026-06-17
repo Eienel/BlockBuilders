@@ -79,6 +79,17 @@ export const toolGroups: ToolGroup[] = [
     tools: ['agent_wallet_fund', 'agent_wallet_status', 'agent_wallet_sweep'],
   },
   {
+    label: 'Policy Vault (Tier 2)',
+    blurb: 'On-chain spending limits the agent cannot exceed: create a vault, fund it, grant per-tx and daily limits with a recipient allowlist and expiry, then let the agent spend within bounds the chain enforces.',
+    tools: [
+      'agent_vault_create',
+      'agent_vault_deposit',
+      'agent_vault_grant_policy',
+      'agent_vault_spend',
+      'agent_vault_status',
+    ],
+  },
+  {
     label: 'MnemoSui: agent memory',
     blurb: 'Create a MemoryBook brain and save persistent memories (indexed on-chain, stored on Walrus).',
     tools: ['mnemosui_create', 'mnemosui_save'],

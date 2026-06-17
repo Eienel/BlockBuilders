@@ -51,6 +51,11 @@ import { suiDecodeTxBytes } from './tools/sui_decode_tx_bytes.js';
 import { agentWalletFund } from './tools/agent_wallet_fund.js';
 import { agentWalletSweep } from './tools/agent_wallet_sweep.js';
 import { agentWalletStatus } from './tools/agent_wallet_status.js';
+import { agentVaultCreate } from './tools/agent_vault_create.js';
+import { agentVaultDeposit } from './tools/agent_vault_deposit.js';
+import { agentVaultGrantPolicy } from './tools/agent_vault_grant_policy.js';
+import { agentVaultSpend } from './tools/agent_vault_spend.js';
+import { agentVaultStatus } from './tools/agent_vault_status.js';
 import { suiDryRun } from './tools/sui_dry_run.js';
 import { suiExplainTx } from './tools/sui_explain_tx.js';
 import { suiGetPortfolio } from './tools/sui_get_portfolio.js';
@@ -466,6 +471,94 @@ const tools: ToolDef[] = [
       network: networkSchema,
     }),
     handler: agentWalletSweep,
+  },
+  {
+    name: 'agent_vault_create',
+    description:
+      "Tier 2, step 1. Build (do not sign) a tx that creates a Policy Vault. The OWNER signs it; on success a shared Vault object exists and an OwnerCap lands in the owner's wallet (the authority to deposit, grant/revoke policies, withdraw). The vault is how an agent gets bounded, on-chain-enforced spending power instead of a raw allowance. Returns base64 tx bytes; read the new Vault id and OwnerCap id from the tx effects.",
+    inputSchema: z.object({
+      owner: z.string().describe('0x address that owns the vault (signs and pays).'),
+      vault_package: z
+        .string()
+        .optional()
+        .describe('agent_vault package id (defaults to the canonical Suisei deployment on the network).'),
+      network: networkSchema,
+    }),
+    handler: agentVaultCreate,
+  },
+  {
+    name: 'agent_vault_deposit',
+    description:
+      "Tier 2, step 2. Build (do not sign) a tx that deposits SUI into a Policy Vault: split amount_mist from the OWNER's gas and join it into the vault balance. Requires the OwnerCap. The owner signs. This is the pool the agent later spends from, never exceeding what is deposited here. Returns base64 tx bytes.",
+    inputSchema: z.object({
+      owner: z.string().describe('0x address of the owner (signs and pays).'),
+      owner_cap_id: z.string().describe('Object id of the OwnerCap from agent_vault_create.'),
+      vault_id: z.string().describe('Object id of the shared Vault.'),
+      amount_mist: z.string().describe('Amount to deposit, in MIST (as a string).'),
+      vault_package: z
+        .string()
+        .optional()
+        .describe('agent_vault package id (defaults to the canonical Suisei deployment).'),
+      network: networkSchema,
+    }),
+    handler: agentVaultDeposit,
+  },
+  {
+    name: 'agent_vault_grant_policy',
+    description:
+      "Tier 2, step 3 - the moat. Build (do not sign) a tx that grants an agent an ON-CHAIN spending policy on the vault. The OWNER signs it (needs the OwnerCap). The Move contract enforces the policy on every spend: per_tx_limit_mist (max one spend), daily_limit_mist (max per rolling 24h), allowed_recipients (empty = anywhere; non-empty = only these addresses), and expires_at_ms (absolute ms timestamp the policy dies). This is bounded autonomy that does not rely on trusting the agent or its prompt - the chain rejects anything out of bounds. Returns base64 tx bytes.",
+    inputSchema: z.object({
+      owner: z.string().describe('0x address of the owner (signs and pays).'),
+      owner_cap_id: z.string().describe('Object id of the OwnerCap from agent_vault_create.'),
+      vault_id: z.string().describe('Object id of the shared Vault.'),
+      agent: z.string().describe('0x address of the agent being granted spending power.'),
+      per_tx_limit_mist: z.string().describe('Max a single spend can move, in MIST (string).'),
+      daily_limit_mist: z.string().describe('Max across a rolling 24h window, in MIST (string).'),
+      allowed_recipients: z
+        .array(z.string())
+        .optional()
+        .describe('Allowed recipient 0x addresses. Omit or empty = the agent may send anywhere.'),
+      expires_at_ms: z
+        .string()
+        .describe('Absolute Unix ms timestamp when the policy expires (e.g. Date.now() + 7 days).'),
+      vault_package: z
+        .string()
+        .optional()
+        .describe('agent_vault package id (defaults to the canonical Suisei deployment).'),
+      network: networkSchema,
+    }),
+    handler: agentVaultGrantPolicy,
+  },
+  {
+    name: 'agent_vault_spend',
+    description:
+      "Tier 2, the star. Build (do not sign) a tx where the AGENT spends SUI from the vault to a recipient. The agent signs it with its OWN key (via agent-signer) - the owner's key is never involved. Every check runs on-chain at execution: per-tx limit, 24h rolling daily limit, recipient allowlist, expiry. A spend that breaks the policy aborts; the agent cannot move funds outside the owner's bounds. Dry-run with sui_explain_tx first - an over-limit spend shows as a would-fail simulation before any key touches it. Returns base64 tx bytes.",
+    inputSchema: z.object({
+      agent: z.string().describe('0x address of the agent (signs with agent-signer and pays gas).'),
+      vault_id: z.string().describe('Object id of the shared Vault to spend from.'),
+      amount_mist: z.string().describe('Amount to spend, in MIST (as a string).'),
+      recipient: z.string().describe('0x address receiving the SUI.'),
+      vault_package: z
+        .string()
+        .optional()
+        .describe('agent_vault package id (defaults to the canonical Suisei deployment).'),
+      network: networkSchema,
+    }),
+    handler: agentVaultSpend,
+  },
+  {
+    name: 'agent_vault_status',
+    description:
+      "Read the live state of a Policy Vault: its SUI balance and, when an agent address is given, that agent's on-chain policy - per-tx limit, daily limit, how much it has already spent in the current 24h window, daily remaining, allowed recipients, and expiry. Read-only. This is the 'show me the guardrails' view - it reads the actual policy the chain will enforce on the next agent_vault_spend.",
+    inputSchema: z.object({
+      vault_id: z.string().describe('Object id of the shared Vault.'),
+      agent: z
+        .string()
+        .optional()
+        .describe("Agent 0x address to read the policy for. Omit to read only the vault balance."),
+      network: networkSchema,
+    }),
+    handler: agentVaultStatus,
   },
   {
     name: 'sui_dry_run',
