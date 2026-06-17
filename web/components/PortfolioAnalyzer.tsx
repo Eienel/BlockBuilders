@@ -10,7 +10,7 @@ interface PortfolioData {
     validatorAddress: string;
     validatorName?: string;
     amount: string;
-    apy?: string;
+    reward?: string;
   }>;
   rewards: string;
   error?: string;
@@ -197,9 +197,9 @@ export function PortfolioAnalyzer() {
                               {parseFloat(stake.amount).toFixed(2)} SUI
                             </p>
                           </div>
-                          {stake.apy && (
+                          {stake.reward && parseFloat(stake.reward) > 0 && (
                             <p className="font-mono text-xs text-accent">
-                              {stake.apy} APY
+                              +{parseFloat(stake.reward).toFixed(4)} SUI earned
                             </p>
                           )}
                         </div>

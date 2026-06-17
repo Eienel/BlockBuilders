@@ -35,8 +35,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Same two reads the sui_get_portfolio tool fuses.
-    const [balances, stakes] = await Promise.all([
+    // Same two reads the sui_get_portfolio tool fuses, plus the system
+    // state so we can show real validator names instead of addresses.
+    const [balances, stakes, systemState] = await Promise.all([
       rpc('suix_getAllBalances', [address]) as Promise<
         { coinType: string; totalBalance: string; coinObjectCount: number }[]
       >,
@@ -46,17 +47,29 @@ export async function POST(request: NextRequest) {
           stakes: { principal: string; estimatedReward?: string; status: string }[];
         }[]
       >,
+      rpc('suix_getLatestSuiSystemState', []) as Promise<{
+        activeValidators: { suiAddress: string; name: string }[];
+      }>,
     ]);
 
-    // Liquid SUI + other coins
+    const validatorNames = new Map(
+      systemState.activeValidators.map((v) => [v.suiAddress, v.name])
+    );
+
+    // Liquid SUI + other coins. Drop dust/spam that rounds to zero, sort by
+    // size so the meaningful holdings surface first.
     const suiBal = balances.find((b) => b.coinType === SUI_TYPE);
     const liquidSui = toSui(suiBal?.totalBalance ?? '0');
     const otherCoins = balances
-      .filter((b) => b.coinType !== SUI_TYPE && BigInt(b.totalBalance) > 0n)
+      .filter((b) => b.coinType !== SUI_TYPE && toSui(b.totalBalance) >= 0.0001)
       .map((b) => ({
-        symbol: b.coinType.split('::').pop() || 'TOKEN',
+        symbol: (b.coinType.split('::').pop() || 'TOKEN').slice(0, 12),
         amount: toSui(b.totalBalance).toFixed(4),
-      }));
+        _raw: toSui(b.totalBalance),
+      }))
+      .sort((a, b) => b._raw - a._raw)
+      .slice(0, 8)
+      .map(({ symbol, amount }) => ({ symbol, amount }));
 
     // Stakes grouped by validator
     let stakedMist = 0n;
@@ -72,7 +85,9 @@ export async function POST(request: NextRequest) {
       rewardMist += validatorReward;
       return {
         validatorAddress: v.validatorAddress,
-        validatorName: `${v.validatorAddress.slice(0, 6)}…${v.validatorAddress.slice(-4)}`,
+        validatorName:
+          validatorNames.get(v.validatorAddress) ||
+          `${v.validatorAddress.slice(0, 6)}…${v.validatorAddress.slice(-4)}`,
         amount: toSui(validatorPrincipal).toFixed(4),
         reward: toSui(validatorReward).toFixed(4),
       };
