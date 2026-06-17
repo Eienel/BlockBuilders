@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.7",
-    "@suisei-mcp/mcp": "^0.1.2",
+    "@suisei-mcp/mcp": "^0.1.3",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
